@@ -12,7 +12,7 @@ export default function PlaceDetailItem( {place,onDirectionClick}: { place: Plac
     return (
         <View>
             <Text style={{ fontSize: 26, fontWeight: "bold" }}>
-                {place.name}
+                {place.name ? place.name : ""}
             </Text>
             <View
                 style={{
@@ -24,17 +24,14 @@ export default function PlaceDetailItem( {place,onDirectionClick}: { place: Plac
                 }}
             >
                 <AntDesign name="message1" size={20} color={Colors.yellow} />
-                <Text>{place.rating}</Text>
+                <Text>{place.address}</Text>
             </View>
             {place.photo ? (
                 <Image
                     source={{
                         uri:
-                            "https://maps.googleapis.com/maps/api/place/photo" +
-                            "?maxwidth=400" +
-                            "&photo_reference=" +
-                            place?.photos[0]?.photo_reference +
-                            "&key=AIzaSyAlIDUiTW6M9p6qb7mHsMCvqk0_OMO3MV0",
+                            "https://dash.vecinos.com.ar/assets/" +
+                            place.photo
                     }}
                     style={{
                         width: "100%",
@@ -44,14 +41,14 @@ export default function PlaceDetailItem( {place,onDirectionClick}: { place: Plac
                     }}
                 />
             ) : null }
-            {place?.photos ? (
+            {place.googlePhotos ? (
                 <Image
                     source={{
                         uri:
                             "https://maps.googleapis.com/maps/api/place/photo" +
                             "?maxwidth=400" +
                             "&photo_reference=" +
-                            place?.photos[0]?.photo_reference +
+                            place.googlePhotos[0] +
                             "&key=AIzaSyAlIDUiTW6M9p6qb7mHsMCvqk0_OMO3MV0",
                     }}
                     style={{
@@ -65,17 +62,13 @@ export default function PlaceDetailItem( {place,onDirectionClick}: { place: Plac
 
 
             <Text
-                style={{ fontSize: 16, marginTop: 10, color: Colors.DARK_GRAY }}
+                style={{ fontSize: 16, marginTop: 10, color: Colors.darkGray }}
                 numberOfLines={2}
             >
-                {place.vicinity?place.vicinity:place.formatted_address}
+                {place.address}
             </Text>
-            {place?.opening_hours ? (
-                <Text className={"font-semibold"}>
-                    {place?.opening_hours?.open_now == true ?
-                        "(Open)" :
-                        "(Closed)"}
-                </Text>
+            {place?.alerted ? (
+                <Text className={"font-semibold"}>( en alerta ) </Text>
             ) : null}
 
             <View style={{marginTop:10,flexDirection:'row',
@@ -86,7 +79,7 @@ export default function PlaceDetailItem( {place,onDirectionClick}: { place: Plac
                                       flexDirection: "row",
                                       alignItems: "center",
                                       gap: 5,
-                                      backgroundColor:Colors.GRAY,
+                                      backgroundColor:Colors.gray,
                                       width:110,
                                       padding:3,
                                       borderRadius:40,
@@ -102,7 +95,7 @@ export default function PlaceDetailItem( {place,onDirectionClick}: { place: Plac
                                       flexDirection: "row",
                                       alignItems: "center",
                                       gap: 5,
-                                      backgroundColor:Colors.GRAY,
+                                      backgroundColor:Colors.gray,
                                       width:90,
                                       padding:3,
                                       borderRadius:40,

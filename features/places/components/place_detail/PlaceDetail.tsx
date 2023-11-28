@@ -21,7 +21,7 @@ export default function PlaceDetail({ place }: { place: PlaceType }) {
     Linking.openURL(url)
   }
   return (
-    <ScrollView style={{ padding: 20, backgroundColor: Colors.white, flex: 1 }}>
+    <ScrollView style={{ padding: 20, backgroundColor: Colors.white, flex: 1, paddingTop: 40 }}>
       <PlaceDetailItem
         place={place}
         onDirectionClick={() => onDirectionClick()}

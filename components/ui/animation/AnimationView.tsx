@@ -2,11 +2,11 @@ import React, { useRef, useEffect } from 'react';
 import {Text, Button, StyleSheet, TouchableOpacity, View} from 'react-native';
 import LottieView from 'lottie-react-native';
 
+import _loading1 from "../../../assets/lottie/loading1.json";
 import _lottie1 from '../../../assets/lottie/lottie1.json';
 import _confused_mobile from '../../../assets/lottie/confused_mobile.json';
 // import _angryCloud from '../../../assets/lottie/angry_cloud.json';
 import Ionicons from "@expo/vector-icons/Ionicons";
-
 export const boardLottie = _lottie1;
 // export const angryCloud =  _angryCloud;
 export const confusedMobile = _confused_mobile;
@@ -16,6 +16,7 @@ export enum AnimationType {
     BOARD = "BOARD",
     ANGRY_CLOUD = "ANGRY_CLOUD",
     CONFUSED_MOBILE = "CONFUSED_MOBILE",
+    LOADING = "LOADING"
 }
 
 export function AnimationView({ source = null,
@@ -34,6 +35,8 @@ export function AnimationView({ source = null,
 
     // switch enum animation type to lottie source
     switch (type) {
+        case AnimationType.LOADING:
+            source = _loading1;
         case AnimationType.BASE:
             source = boardLottie;
             break;
@@ -80,6 +83,25 @@ export function AnimationView({ source = null,
                 }}
                 source={source}
             />
+
+            { type === AnimationType.LOADING && (
+                <View style={styles.buttonContainer}>
+                    <TouchableOpacity
+                        className={`
+                        bg-white
+                        px-4 py-2 rounded
+                        border-b-4 border-r-4 border-sky-500
+                        `}
+                        onPress={onPress}
+                    >
+                        <Text className={`
+                            text-sky-700 font-bold    
+                            uppercase
+                            text-sm
+                        `}>Refrescar</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
 
             { type === AnimationType.BOARD && (
                 <View style={styles.buttonContainer}>

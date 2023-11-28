@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "alerta-vecinal",
-    "slug": "alerta-vecinal",
-    "version": "1.0.2",
+    "name": "Alarma PBA",
+    "slug": "alerta-pba",
+    "version": "1.1.17",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "e7.vecinos.alertapba",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash.png",
@@ -15,17 +15,19 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "owner": "e7lab",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "e7.vecinos.ave"
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
+      "versionCode": 17,
+      "package": "e7.vecinos.alertapba",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "e7.vecinos.ave",
-      "versionCode": 2,
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
@@ -33,7 +35,7 @@
       ],
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyALoBC6-jqcHFm5tuGUC3JihKRkn_hMpW0"
+          "apiKey": "AIzaSyBX-H1Lk9ubEY-tLvzgel77UFY2fIf5yzM"
         }
       }
     },
@@ -58,7 +60,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "c01b6e11-b49f-4d3f-a84b-8ebc49bd917d"
+        "projectId": "38dcf7e5-6d1f-4f54-a973-99f8e8cf2fba"
       }
     }
   }

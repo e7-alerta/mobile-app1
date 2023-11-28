@@ -2,8 +2,13 @@ import {TouchableOpacity, Text, Touchable, View, PermissionsAndroid} from "react
 import {router} from "expo-router";
 import {useEffect, useState} from "react";
 import {hasLocationPermission} from "../features/places/services/google_location";
+import {usePushNotifications} from "../hooks/usePushNotifications";
 
 export default function Page() {
+  //   const { expoPushToken } = usePushNotifications();
+  //   console.log(expoPushToken);
+
+
     const [hasLocation, setHasLocation] = useState(false);
     const [hasError, setHasError] = useState(false);
     const [retry, setRetry] = useState(false);
@@ -54,7 +59,7 @@ export default function Page() {
         <View className={`
             flex-1
             w-full h-full
-            bg-sky-200
+            bg-gray-20r
             items-center justify-center
         `}>
         </View>

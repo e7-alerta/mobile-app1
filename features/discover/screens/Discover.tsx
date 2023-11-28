@@ -1,114 +1,225 @@
 import {View, Linking} from 'react-native';
-import {useEffect, useState} from 'react';
+import {memo, useEffect, useMemo, useState} from 'react';
 import GoogleMapViewFull from '../components/discover/map/GoogleMapViewFull';
 import GlobalApi from '../../places/services/google_places';
 import BusinessList from '../components/discover/business/BusinessList';
 import HeaderBar from "../components/discover/header/HeaderBar";
 
 import { StyleSheet } from 'react-native';
-import Ionicons from "@expo/vector-icons/Ionicons";
-import ActionButton from "../../../ui/buttons/actionbutton/ActionButton";
-import ActionButtonItem from "../../../ui/buttons/actionbutton/ActionButtonItem";
 import Toast from "react-native-toast-message";
 import { Vibration } from 'react-native';
-import PlaceApi from "../../places/services/dash";
-import {PlaceType} from "../../places/types/places_types";
+import PlaceApi, {fetchToken} from "../../places/services/dash";
+import {PlaceOrigin, PlaceType} from "../../places/types/places_types";
 import {useUserStore} from "../../places/stores/user_store";
+import {AnimationType, AnimationView} from "../../../components/ui/animation/AnimationView";
 
+import { router } from 'expo-router';
+import {VerticalFloatingButton} from "../../../components/ui/buttons/VerticalFloatingButton";
+import {usePushNotifications} from "../../../hooks/usePushNotifications";
 
-const searchPlace = ['supermercado','tienda', 'verduleria | carniceria','panaderia | almacen'];
+import KeyEvent from "react-native-keyevent";
 
-export default function DiscoverScreen() {
+const searchPlace = ['supermercado | verduleria | carniceria','panaderia | almacen | fiambreria'];
+
+const googlePlacesCacheByStoreType  : Map<String, PlaceType[]>  = new Map<String, PlaceType[]>();
+const expoTokenCache : { token: string } = { token: null };
+
+export function DiscoverScreen() {
+    const [lastKey, setLastKey] = useState(-1);
+    const { expoPushToken , notification } = usePushNotifications();
 
     // @ts-ignore
     const userPlace: PlaceType = useUserStore(state => state.userPlace)
+    const [hasError, setHasError] = useState(false);
 
-    const [ storePlaces, setStorePlaces ] = useState([]);
-    const [ placeList,setPlaceList ]=useState([]);
+    const [ places, setPlaces ] = useState<{googlePlaces: PlaceType[], storePlaces: PlaceType[]}>({googlePlaces: [], storePlaces: []});
 
-    const GetSearchPlace=(value, onSuccess = {})=>{
-        GlobalApi.searchByText(
+    useEffect(() => {
+        if(lastKey === 24) {
+            showToast({
+                alert_type: "alerta silenciosa",
+            });
+        }
+    }, [lastKey]);
+
+
+    useEffect(() => {
+        if (expoPushToken && !expoTokenCache.token && userPlace) {
+            expoTokenCache.token = expoPushToken?.data;
+            fetchToken({id: userPlace.id, token: expoPushToken.data})
+                .then(resp => {
+                    console.log("token renovado.");
+                }).catch(err => {
+                console.error("Error al renovar token", err);
+            });
+        }
+    }, [expoPushToken, userPlace]);
+
+    const RefreshPlaces = async () => {
+        // return all places in cache in all items
+        let _allGooglePlaces : PlaceType[] = [];
+        googlePlacesCacheByStoreType.forEach((value, key) => {
+            _allGooglePlaces = _allGooglePlaces.concat(value);
+        });
+
+        let _storePlaces: PlaceType[] = [];
+        try {
+            _storePlaces = await PlaceApi.getPlaces();
+        } catch (e) {
+            console.error("Error al buscar stores in dash", e);
+        }
+        setPlaces({
+            googlePlaces: _allGooglePlaces.slice(40),
+            storePlaces: _storePlaces
+        });
+    }
+
+    const GetSearchPlace= async (value): Promise<PlaceType[]>=> {
+
+        // check if cache exists
+        if(googlePlacesCacheByStoreType.has(value))
+        {
+            console.log(" [ discover page ] cache hit: ", value);
+            return googlePlacesCacheByStoreType.get(value);
+        }
+
+
+        let response = await GlobalApi.searchByText(
             userPlace.coords.latitude,
             userPlace.coords.longitude,
             value
-        ).then(resp=>{
-            setPlaceList(resp.data.results);
-            onSuccess(resp.data.results);
-        })
-    }
-    const GetNearPlace=(value)=>{
-        GlobalApi.nearByPlace(userPlace.coords.latitude,
-            userPlace.coords.longitude,value).then(resp=>{
-            setPlaceList(resp.data.results);
-        })
+        );
+
+        let places = response.data.results
+                .map(item=> {
+                    let place = {
+                        name: item.name,
+                        placeId: item.place_id,
+                        address: item.formatted_address,
+                        googlePhotos: (item.photos ? item.photos.map(photo=>photo.photo_reference) : []),
+                        coords: {
+                            latitude: item.geometry.location.lat,
+                            longitude: item.geometry.location.lng
+                        },
+                        placeLabels: item.types,
+                        placeOrigin: PlaceOrigin.GOOGLE
+                    } as PlaceType;
+                    return place;
+                });
+
+        googlePlacesCacheByStoreType.set(value, places);
+        return places;
     }
 
     useEffect(() => {
-        let index = 0;
+        /* show toast when notification is received */
+        if (notification) {
+            let { data , title, subtitle, body } = notification.request.content;
+            console.log("notification received: ", notification);
+            Toast.show({
+                type: 'success',
+                text1: title,
+                position: 'top',
+                text2: body,
+                visibilityTime: 12000,
+                autoHide: true,
+                type: 'success',
+                topOffset: 120,
+            });
+            Vibration.vibrate(2000);
+        }
+    }, [notification]);
+
+    useEffect(() => {
+
+        let timer = setTimeout(() => {
+            if(!userPlace.coords) {
+                console.log("No se pudo obtener ubicación");
+                router.replace("/")
+                clearTimeout(timer);
+            } else {
+                console.log("user place loaded, redirecting to discover");
+                clearTimeout(timer);
+            }
+        },  6000);
+
+
         let ciclos = 0;
         // @ts-ignore
-        let allPlaces = [];
+        let allPlaces: PlaceType[] = [];
         // @ts-ignore
         let knownAlerts = [];
-        if(userPlace.coords && userPlace.coords.latitude && userPlace.coords.longitude) {
-            GetSearchPlace('supermercado | verduleria | carniceria | panaderia | almacen', (items) => {
-                allPlaces = allPlaces.concat(items);
-            });
-            index = (index + 1) % searchPlace.length;
-            ciclos++;
-        }
-        const interval = setInterval(() => {
-            if(userPlace.coords && userPlace.coords.latitude && userPlace.coords.longitude) {
-                if (ciclos >= 5) {
-                    let randomPlaces = allPlaces.sort(() => .5 - Math.random()).slice(0, 30);
-                    setPlaceList(randomPlaces);
-                } else {
-                    GetSearchPlace(searchPlace[index], (items) => {
-                        allPlaces = allPlaces.concat(items);
-                    });
-                    index = (index + 1) % searchPlace.length;
-                    ciclos++;
-                }
-            }
+        let newKnownAlerts = [];
+        let items: PlaceType[] = [];
+        let online = true;
+        let index = 0;
 
-            let newAlerted = null;
 
-            PlaceApi.getPlaces().then(resp=>{
-                const items = [];
-                resp.data.data.map(inPlace=>{
-                    if(inPlace.alerted && !knownAlerts.includes(inPlace.id)) {
-                        console.log(inPlace.alerted);
-                        newAlerted = inPlace;
-                        knownAlerts.push(inPlace.id);
+
+        try {
+            (async () => {
+
+
+                while (online) {
+                    let storePlaces: PlaceType[] = [];
+                    let googlePlaces: PlaceType[] = [];
+
+                    let hasAlerts = false;
+
+                    if (userPlace.coords && userPlace.coords.latitude && userPlace.coords.longitude) {
+
+                        try {
+                            storePlaces = await PlaceApi.getNearByPlaces(userPlace);
+                            googlePlaces = await PlaceApi.getNearByGPlaces(userPlace);
+                        } catch (e) {
+                            console.error("Error al buscando nearby stores in dash", e);
+                            clearTimeout(timer);
+                            setHasError(true);
+                        }
+
+                        hasAlerts = storePlaces.filter(place => place.alerted).length > 0;
+
+                        // if (ciclos >= searchPlace.length) {
+                        //     googlePlaces = allPlaces.sort(() => .5 - Math.random()).slice(0, 30);
+                        // } else {
+                        //     // console.log("index: ", searchPlace[index]);
+                        //     try {
+                        //         console.log(" [ discover page ] buscando lugares en google ..................... ", searchPlace[index]);
+                        //         googlePlaces = await GetSearchPlace(searchPlace[index]);
+                        //         allPlaces = allPlaces.concat(googlePlaces);
+                        //         index = (index + 1) % searchPlace.length;
+                        //         ciclos++;
+                        //     } catch (e) {
+                        //         console.error("Error al buscar lugares", e);
+                        //         clearTimeout(timer);
+                        //         setHasError(true);
+                        //     }
+                        // }
+                    } else {
+                        // sleep 2 seconds and try again
+                        await new Promise(r => setTimeout(r, 15000));
+                        continue;
                     }
 
-                    items.push(inPlace);
-                });
-                setStorePlaces(items);
-                if (newAlerted) {
-                    Vibration.vibrate(2000);
-                    Toast.show({
-                        type: 'info',
-                        text1: 'Alerta 🚨',
-                        position: 'top',
-                        topOffset: 80,
-                        text2: `Se ha registrado una alerta en ${newAlerted.name + " " + newAlerted.address}`,
-                        visibilityTime: 12000,
-                        autoHide: true
-                    });
-                    Vibration.vibrate(2000);
-                }
 
-                const newKnownAlerts = [];
-                knownAlerts.map(id=>{
-                    const place = items.find(item=>item.id===id);
-                    if (place && place.alerted) {
-                        newKnownAlerts.push(id);
+
+                    let newAlerted = null;
+                    if (!hasAlerts && storePlaces.filter(place => place.alerted).length > 0) {
+                        newAlerted =  storePlaces.filter(place => place.alerted)[0];
+                        Vibration.vibrate(2000);
+                        Toast.show({
+                            type: 'info',
+                            text1: 'Alerta 🚨',
+                            position: 'top',
+                            topOffset: 80,
+                            text2: `Se ha registrado una alerta en ${newAlerted.name + " " + newAlerted.address}`,
+                            visibilityTime: 12000,
+                            autoHide: true
+                        });
+                        Vibration.vibrate(2000);
                     }
-                });
 
-                if (newKnownAlerts.length === 0) {
-                    if (knownAlerts.length > 0 && newKnownAlerts.length === 0) {
+                    if (hasAlerts && storePlaces.filter(place => place.alerted).length === 0) {
                         Toast.show({
                             type: 'success',
                             text1: 'Ya esta todo bien 👮',
@@ -118,15 +229,29 @@ export default function DiscoverScreen() {
                             autoHide: true
                         });
                     }
+
+
+                    setPlaces({googlePlaces: googlePlaces, storePlaces: storePlaces});
+                    await new Promise(r => setTimeout(r, 15000));
                 }
-                knownAlerts = newKnownAlerts;
+            })();
+        } catch (e) {
+            console.error("Error al solicitar permisos de ubicación", e);
+            clearTimeout(timer);
+            setHasError(true);
+        }
 
-            }).catch(err=>{  });
 
-        },  15000);
 
-        return () => clearInterval(interval);
-    }, [userPlace]);
+        KeyEvent.onKeyDownListener((keyEvent) => {
+            if(keyEvent.keyCode === 24) {
+                console.log(" [ discover page ] alerta clicked: ", "alerta silenciosa");
+                showToast({
+                    alert_type: "alerta silenciosa",
+                });
+            }
+        });
+    }, []);
 
     const showToast = ({ alert_type }) => {
 
@@ -194,62 +319,59 @@ export default function DiscoverScreen() {
     return (
         <View className={"h-full"}>
             <View className={"w-5/6 mr-8"} style={{position:'absolute',zIndex:20}}>
-                <HeaderBar title={userPlace.district} subtitle={userPlace.subregion} />
+                <HeaderBar title={userPlace.subregion ? userPlace.subregion : ( userPlace.region ? userPlace.region : "" )}
+                           subtitle={userPlace.region ? userPlace.region : ( userPlace.city ? userPlace.city : "" )} />
             </View>
 
-            <View style={{position:'relative',zIndex:50,bottom:"-55%", right:-20 }}
-                  className={"bg-yellow-200"} >
+            { (places.googlePlaces.length > 0 && places.storePlaces.length > -1) ?
+                <View style={{position:'relative',zIndex:50,bottom:"-80%", right:-20 }}
+                      className={"bg-gray-200"} >
 
-                <ActionButton size={80} renderIcon={() =>
-                    ( <Ionicons name="notifications" style={styles.mainButtonIcon} />)
-                    } buttonColor="#0496ff">
-                    <ActionButtonItem
-                        buttonColor="#ef233c"
-                        title="Entraron en mi local"
-                        onPress={() => showToast({
-                            alert_type: 'saqueo_en_comercio',
-                        })}>
-                        <Ionicons name="flame" style={styles.actionButtonIcon} />
-                    </ActionButtonItem>
-                    <ActionButtonItem
-                        buttonColor="#ef233c"
-                        title="Saqueo en local vecino"
-                        onPress={() => showToast({
-                            alert_type: 'saqueo_en_comercio',
-                        })}>
-                        <Ionicons name="eye" style={styles.actionButtonIcon} />
-                    </ActionButtonItem>
-                    <ActionButtonItem
-                        buttonColor="#ef476f"
-                        title="Robo a casa"
-                        onPress={() => showToast( {
-                            alert_type: 'robo_a_casa',
-                        })}>
-                        <Ionicons name="home" style={styles.actionButtonIcon} />
-                    </ActionButtonItem>
-                    <ActionButtonItem
-                        buttonColor="#ffc300"
-                        title="Actividad sospechosa"
-                        onPress={() => showToast({
-                            alert_type: 'actividad_sospechosa',
-                        })}>
-                        <Ionicons name="sad" style={styles.actionButtonIcon} />
-                    </ActionButtonItem>
-                </ActionButton>
-            </View>
+                    <VerticalFloatingButton onPress={
+                        (alter_type: string) => {
+                            console.log(" [ discover page ] alerta clicked: ", alter_type);
+                            showToast({
+                                alert_type: alter_type,
+                            });
+                        }
+                    }/>
+
+                </View> : <AnimationView type={AnimationType.LOADING}  onPress={() => { router.replace("/"); }}/>
+            }
+
+            {
+                hasError ?
+                    <AnimationView onPress={() => {
+                        router.replace("/");
+                    }}
+                                   onCancel={() => {
+                                       router.replace("/");
+                                   }}
+                                   type={AnimationType.ANGRY_CLOUD}
+                    /> : null
+            }
+
+
+                { (places.googlePlaces.length > 0 && places.storePlaces.length > -1) ?
             <GoogleMapViewFull
                 userPlace={userPlace}
-                placeList={placeList}
-                storePlaces={storePlaces}
+                googlePlaces={places.googlePlaces}
+                storePlaces={places.storePlaces}
             />
+                : null }
 
+            {
             <View style={{position:'absolute',zIndex:20,bottom:0}}>
-                <BusinessList placeList={placeList} />
+                <BusinessList googlePlaces={places.googlePlaces} storePlaces={places.storePlaces} />
             </View>
+            }
 
         </View>
     )
 }
+
+export default memo(DiscoverScreen);
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,

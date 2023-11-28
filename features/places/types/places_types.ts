@@ -7,6 +7,7 @@ export type GeocodedAddressType = {
     postalCode: string,
     district: string,
     region: string,
+    locality: string,
     street: string,
     streetNumber: string,
     isoCountryCode: string,
@@ -26,12 +27,22 @@ export interface CoordsType {
 }
 
 
+export enum PlaceOrigin {
+    GOOGLE = 'GOOGLE',
+    STORE = 'STORE',
+    DASH = 'DASH',
+    APP = 'APP'
+}
+
 export interface PlaceType {
+    placeLabels: string[],
+    placeOrigin: PlaceOrigin,
     numberOfAlerts: number;
-    googlePhotos?: string[];
+    photo: string;
+    googlePhotos: string[];
     status: string,
     id?: string;
-    name: string;
+    name?: string;
     placeId: string;
     coords: CoordsType;
     address: string;
@@ -45,7 +56,6 @@ export interface PlaceType {
     country: string;
     countryCode: string;
     alerted: boolean;
-    lastAlerted: string;
 }
 
 export interface AllertType {

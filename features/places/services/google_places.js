@@ -2,7 +2,8 @@ import axios from "axios"
 
 const PLACE_URL="https://maps.googleapis.com/maps/api/place"
 const GEOCODE_URL="https://maps.googleapis.com/maps/api/geocode";
-const API_KEY="AIzaSyALoBC6-jqcHFm5tuGUC3JihKRkn_hMpW0"
+// const API_KEY= "AIzaSyAlIDUiTW6M9p6qb7mHsMCvqk0_OMO3MV0"
+const API_KEY= "AIzaSyBX-H1Lk9ubEY-tLvzgel77UFY2fIf5yzM"
 
 const nearByPlace=(lat,lng,type)=>axios.get(PLACE_URL+
     "/nearbysearch/json?"+

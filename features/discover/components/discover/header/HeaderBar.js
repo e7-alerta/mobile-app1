@@ -3,13 +3,13 @@ import { LinearGradient } from "expo-linear-gradient";
 import Colors from "../../../shared/colors";
 import { Image } from "react-native";
 
-import logo from "./../../../../../assets/images/logo.png";
+import logo from "../../../../../assets/images/placeholder.png";
 
 export default function HeaderBar({
   title = null, subtitle = null, onPress
 }) {
     return (
-        <View>
+        <View >
             <LinearGradient
                 className={"rounded-br-3xl"}
                 // Background Linear Gradient
@@ -18,6 +18,7 @@ export default function HeaderBar({
             >
                 <View
                     style={{
+                        marginTop: 25,
                         display: "flex",
                         flexDirection: "row",
                         justifyContent: "",

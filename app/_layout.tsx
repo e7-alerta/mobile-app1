@@ -14,11 +14,7 @@ export const unstable_settings = {
 };
 
 
-
-
-
 SplashScreen.preventAutoHideAsync();
-
 
 
 const toastConfig = {
@@ -100,8 +96,9 @@ const toastConfig = {
 
 
 export default function RootLayout() {
-  const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+
+    const [loaded, error] = useFonts({
+    // SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   });
 
@@ -125,7 +122,7 @@ export default function RootLayout() {
         <Slot/>
           <Toast
               style={{ zIndex: 30 }}
-              className={"bg-yellow-200 z-30"}
+              className={"bg-gray-200 z-30"}
               config={toastConfig}
           />
 

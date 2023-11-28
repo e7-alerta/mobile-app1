@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "146489803988",
+    "project_id": "ave1-398320",
+    "storage_bucket": "ave1-398320.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:146489803988:android:f08a011d981d3ba2bd2741",
+        "android_client_info": {
+          "package_name": "e7.vecinos.alertapba"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBYMw9jUQFkc9hg27lfKnzzZjI3QAbvCP0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
