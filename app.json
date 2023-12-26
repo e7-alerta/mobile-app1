@@ -2,7 +2,7 @@
   "expo": {
     "name": "Alarma PBA",
     "slug": "alerta-pba",
-    "version": "1.1.17",
+    "version": "1.2.22",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "e7.vecinos.alertapba",
@@ -22,7 +22,7 @@
     },
     "android": {
       "googleServicesFile": "./google-services.json",
-      "versionCode": 17,
+      "versionCode": 22,
       "package": "e7.vecinos.alertapba",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",

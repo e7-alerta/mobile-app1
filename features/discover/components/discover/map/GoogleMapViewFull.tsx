@@ -72,7 +72,6 @@ export default function GoogleMapViewFull(
                                         }/>
                                 );
                             } else {
-                                console.log("[ GoogleMapViewFull ] item OK: ", item);
                                 return (
                                     <Marker
                                         key={`${(item.id ? item.id : item.placeId)}-${item.coords.latitude}-${item.coords.longitude}`}

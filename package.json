@@ -1,7 +1,7 @@
 {
   "name": "alerta-vecinal",
   "main": "expo-router/entry",
-  "version": "1.1.13",
+  "version": "1.2.21",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",

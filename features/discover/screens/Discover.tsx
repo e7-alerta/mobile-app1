@@ -25,7 +25,6 @@ const googlePlacesCacheByStoreType  : Map<String, PlaceType[]>  = new Map<String
 const expoTokenCache : { token: string } = { token: null };
 
 export function DiscoverScreen() {
-    const [lastKey, setLastKey] = useState(-1);
     const { expoPushToken , notification } = usePushNotifications();
 
     // @ts-ignore
@@ -35,81 +34,21 @@ export function DiscoverScreen() {
     const [ places, setPlaces ] = useState<{googlePlaces: PlaceType[], storePlaces: PlaceType[]}>({googlePlaces: [], storePlaces: []});
 
     useEffect(() => {
-        if(lastKey === 24) {
-            showToast({
-                alert_type: "alerta silenciosa",
-            });
-        }
-    }, [lastKey]);
-
-
-    useEffect(() => {
-        if (expoPushToken && !expoTokenCache.token && userPlace) {
-            expoTokenCache.token = expoPushToken?.data;
-            fetchToken({id: userPlace.id, token: expoPushToken.data})
-                .then(resp => {
-                    console.log("token renovado.");
-                }).catch(err => {
-                console.error("Error al renovar token", err);
-            });
+        try {
+            if (expoPushToken && !expoTokenCache.token && userPlace) {
+                expoTokenCache.token = expoPushToken?.data;
+                fetchToken({id: userPlace.phone_id, token: expoPushToken.data})
+                    .then(resp => {
+                        console.log("token renovado.");
+                    }).catch(err => {
+                    console.error("Error al renovar token", err);
+                });
+            }
+        } catch (e) {
+            console.error("Error al renovar token", e);
         }
     }, [expoPushToken, userPlace]);
 
-    const RefreshPlaces = async () => {
-        // return all places in cache in all items
-        let _allGooglePlaces : PlaceType[] = [];
-        googlePlacesCacheByStoreType.forEach((value, key) => {
-            _allGooglePlaces = _allGooglePlaces.concat(value);
-        });
-
-        let _storePlaces: PlaceType[] = [];
-        try {
-            _storePlaces = await PlaceApi.getPlaces();
-        } catch (e) {
-            console.error("Error al buscar stores in dash", e);
-        }
-        setPlaces({
-            googlePlaces: _allGooglePlaces.slice(40),
-            storePlaces: _storePlaces
-        });
-    }
-
-    const GetSearchPlace= async (value): Promise<PlaceType[]>=> {
-
-        // check if cache exists
-        if(googlePlacesCacheByStoreType.has(value))
-        {
-            console.log(" [ discover page ] cache hit: ", value);
-            return googlePlacesCacheByStoreType.get(value);
-        }
-
-
-        let response = await GlobalApi.searchByText(
-            userPlace.coords.latitude,
-            userPlace.coords.longitude,
-            value
-        );
-
-        let places = response.data.results
-                .map(item=> {
-                    let place = {
-                        name: item.name,
-                        placeId: item.place_id,
-                        address: item.formatted_address,
-                        googlePhotos: (item.photos ? item.photos.map(photo=>photo.photo_reference) : []),
-                        coords: {
-                            latitude: item.geometry.location.lat,
-                            longitude: item.geometry.location.lng
-                        },
-                        placeLabels: item.types,
-                        placeOrigin: PlaceOrigin.GOOGLE
-                    } as PlaceType;
-                    return place;
-                });
-
-        googlePlacesCacheByStoreType.set(value, places);
-        return places;
-    }
 
     useEffect(() => {
         /* show toast when notification is received */
@@ -144,25 +83,16 @@ export function DiscoverScreen() {
         },  6000);
 
 
-        let ciclos = 0;
-        // @ts-ignore
-        let allPlaces: PlaceType[] = [];
-        // @ts-ignore
-        let knownAlerts = [];
-        let newKnownAlerts = [];
-        let items: PlaceType[] = [];
         let online = true;
-        let index = 0;
-
-
 
         try {
             (async () => {
+                let googlePlaces: PlaceType[] = [];
+                googlePlaces = await PlaceApi.getNearByGPlaces(userPlace);
 
 
                 while (online) {
                     let storePlaces: PlaceType[] = [];
-                    let googlePlaces: PlaceType[] = [];
 
                     let hasAlerts = false;
 
@@ -170,34 +100,14 @@ export function DiscoverScreen() {
 
                         try {
                             storePlaces = await PlaceApi.getNearByPlaces(userPlace);
-                            googlePlaces = await PlaceApi.getNearByGPlaces(userPlace);
                         } catch (e) {
                             console.error("Error al buscando nearby stores in dash", e);
-                            clearTimeout(timer);
+                            // clearTimeout(timer);
                             setHasError(true);
                         }
-
                         hasAlerts = storePlaces.filter(place => place.alerted).length > 0;
-
-                        // if (ciclos >= searchPlace.length) {
-                        //     googlePlaces = allPlaces.sort(() => .5 - Math.random()).slice(0, 30);
-                        // } else {
-                        //     // console.log("index: ", searchPlace[index]);
-                        //     try {
-                        //         console.log(" [ discover page ] buscando lugares en google ..................... ", searchPlace[index]);
-                        //         googlePlaces = await GetSearchPlace(searchPlace[index]);
-                        //         allPlaces = allPlaces.concat(googlePlaces);
-                        //         index = (index + 1) % searchPlace.length;
-                        //         ciclos++;
-                        //     } catch (e) {
-                        //         console.error("Error al buscar lugares", e);
-                        //         clearTimeout(timer);
-                        //         setHasError(true);
-                        //     }
-                        // }
                     } else {
-                        // sleep 2 seconds and try again
-                        await new Promise(r => setTimeout(r, 15000));
+                        await new Promise(r => setTimeout(r, 20000));
                         continue;
                     }
 
@@ -237,7 +147,7 @@ export function DiscoverScreen() {
             })();
         } catch (e) {
             console.error("Error al solicitar permisos de ubicación", e);
-            clearTimeout(timer);
+            // clearTimeout(timer);
             setHasError(true);
         }
 
@@ -256,6 +166,7 @@ export function DiscoverScreen() {
     const showToast = ({ alert_type }) => {
 
         PlaceApi.alert({
+            phone_id: userPlace.phone_id,
             id: userPlace.id,
             latitude: userPlace.coords.latitude,
             longitude: userPlace.coords.longitude,
@@ -275,11 +186,11 @@ export function DiscoverScreen() {
                     .then(resp=>{
                         showContact({
                             address: resp.data.results[0]["formatted_address"],
-                            phoneNumber: '5491162954760'
+                            phoneNumber: '5491128835917'
                         });
                     }).catch(err=>{
                         showContact({
-                            phoneNumber: '5491162954760'
+                            phoneNumber: '5491128835917'
                         });
                     });
             }

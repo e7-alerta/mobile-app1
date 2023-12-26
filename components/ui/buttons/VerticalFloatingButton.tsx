@@ -39,19 +39,19 @@ export const VerticalFloatingButton = (
     const popOut = () => {
         setPop(false);
         Animated.timing(icon_1, {
-            toValue: 80,
+            toValue: 40,
             duration: 500,
             useNativeDriver: false,
         }).start();
 
         Animated.timing(icon_2, {
-            toValue: 80,
+            toValue: 40,
             duration: 500,
             useNativeDriver: false,
         }).start();
 
         Animated.timing(icon_3, {
-            toValue: 80,
+            toValue: 40,
             duration: 500,
             useNativeDriver: false,
         }).start();

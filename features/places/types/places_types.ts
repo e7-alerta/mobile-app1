@@ -51,11 +51,14 @@ export interface PlaceType {
     postalCode: string;
     region: string;
     subregion: string;
+    neighborhood: string;
     district: string;
     city: string;
     country: string;
     countryCode: string;
     alerted: boolean;
+    isNew: boolean;
+    phone_id?: string;
 }
 
 export interface AllertType {

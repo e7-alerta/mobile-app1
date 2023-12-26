@@ -98,7 +98,6 @@ const toastConfig = {
 export default function RootLayout() {
 
     const [loaded, error] = useFonts({
-    // SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   });
 
@@ -129,16 +128,3 @@ export default function RootLayout() {
       </>
   );
 }
-
-// function RootLayoutNav() {
-//   const [location, setLocation] = useState(null);
-//   const [place, setPlace] = useState(null);
-//
-//   return (
-//         <Stack>
-//           <Stack.Screen name="boarding" options={{ headerShown: false }} />
-//           <Stack.Screen name="discover" options={{ headerShown: false }} />
-//           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-//         </Stack>
-//   );
-// }

@@ -2,7 +2,11 @@ import axios from "axios";
 import {CoordsType, PlaceOrigin, PlaceType} from "../types/places_types";
 
 const PLACE_URL = "https://dash.vecinos.com.ar/items/places";
+const PHONE_ALERTS_URL = "https://phones.vecinos.com.ar/api/v1/phones/";
+const PHONE_NEW_URL = "https://phones.vecinos.com.ar/api/v1/phones/new";
+const PHONE_URL = "https://phones.vecinos.com.ar/api/v1/phones";
 const NEAR_BASE_HOST = "https://nearby.vecinos.com.ar";
+const NEAR2_BASE_HOST = "https://nearby2.vecinos.com.ar";
 
 axios.interceptors.request.use(request => {
     console.debug('[request] ', request)
@@ -10,7 +14,6 @@ axios.interceptors.request.use(request => {
 });
 
 axios.interceptors.response.use(response => {
-    console.debug('[response] ', response)
     return response
 });
 
@@ -45,17 +48,24 @@ export const fetchGetNearByGPlaces = async (origin: PlaceType) => {
     let district = origin.district ? origin.district : "";
     let region = origin.region ? origin.region : "";
 
+// `${NEAR_BASE_HOST}/api/v1/nearby_gplaces?lat=${origin.coords.latitude}&lng=${origin.coords.longitude}&district=${district}&region=${region}&radius=800&limit=20&offset=0&sort=distance&order=asc&place_type=all`,
     try  {
         let response =  await axios.get(
-            `${NEAR_BASE_HOST}/api/v1/nearby_gplaces?lat=${origin.coords.latitude}&lng=${origin.coords.longitude}&district=${district}&region=${region}&radius=800&limit=20&offset=0&sort=distance&order=asc&place_type=all`,
+            `${NEAR2_BASE_HOST}/near/gplaces?lat=${origin.coords.latitude}&lng=${origin.coords.longitude}&district=${district}&region=${region}&radius=800&limit=20&offset=0&sort=distance&order=asc&place_type=all`,
         );
 
-        let data = await response.data.places;
-        let places: PlaceType[] = data
+        let data = await response.data; // .places;
+        // check if data is empty or null
+        let places: PlaceType[] = [];
+
+        if(!data) {
+            data = []
+        }
+
+        places = data
             .filter((item) => (item.geopoint && item.geopoint.coordinates))
-            .map( (item) => {
-                console.log("item is ", item)
-                let place : PlaceType = {
+            .map((item) => {
+                let place: PlaceType = {
                     id: item.id,
                     name: item.name,
                     coords: {
@@ -77,8 +87,7 @@ export const fetchGetNearByGPlaces = async (origin: PlaceType) => {
                 } as PlaceType;
                 return place;
             });
-        console.log("[ services.dash | 002 ]", places);
-        return places;
+        return places;  // esimionato
     } catch (error) {
         console.trace("error is ", error);
         return [];
@@ -92,14 +101,21 @@ export const fetchGetNearByPlaces = async (origin: PlaceType) => {
 
     try  {
         let response =  await axios.get(
-            `${NEAR_BASE_HOST}/api/v1/nearby_places?lat=${origin.coords.latitude}&lng=${origin.coords.longitude}&district=${district}&region=${region}&radius=800&limit=20&offset=0&sort=distance&order=asc&place_type=all`,
+            `${NEAR2_BASE_HOST}/near/places?lat=${origin.coords.latitude}&lng=${origin.coords.longitude}&district=${district}&region=${region}&radius=800&limit=20&offset=0&sort=distance&order=asc&place_type=all`,
         );
 
-        let data = await response.data.places;
+        // console.log("............ data is ", response.data)
+        let data = await response.data; // .places;
+
+        if(!data) {
+            data = []
+        }
+
         let places: PlaceType[] = data
+
+        places = data
             .filter((item) => (item.geopoint && item.geopoint.coordinates))
             .map( (item) => {
-                console.log("item is ", item)
                 let place : PlaceType = {
                     id: item.id,
                     name: item.name,
@@ -122,8 +138,7 @@ export const fetchGetNearByPlaces = async (origin: PlaceType) => {
                 } as PlaceType;
                 return place;
             });
-        console.log("[ services.dash | 002 ]", places);
-        return places;
+        return places;  // esimionato
     } catch (error) {
         console.trace("error is ", error);
         return [];
@@ -161,7 +176,7 @@ export const fetchGetPlaces = async () => {
                 } as PlaceType;
                 return place;
         });
-        return places;
+        return places.slice(0, 2);  // esimionato
     } catch (error) {
         console.trace("error is ", error);
         return [];
@@ -169,9 +184,6 @@ export const fetchGetPlaces = async () => {
 }
 
 export const fetchNewPlace = async ( newPlace: PlaceType )  => {
-    console.log("[ services.dash | 001 ] ...................................");
-    console.log(newPlace);
-    console.log("[ services.dash | 002 ] ...................................");
     const placeIn =  {
         status: newPlace.status ? newPlace.status : "draft",
         name: newPlace.name,
@@ -192,23 +204,21 @@ export const fetchNewPlace = async ( newPlace: PlaceType )  => {
         raw_region: newPlace.region,
         raw_subregion: newPlace.subregion,
         postal_code: newPlace.postalCode,
-        _country: newPlace.country,
+        raw_country: newPlace.country,
     }
-    console.log(placeIn);
-    console.log("[ services.dash | 003 ] ...................................");
 
     let storedPlace = null;
     try {
         let response = await axios.post(
-            PLACE_URL,
+            PHONE_NEW_URL,
             placeIn
         );
-        let { id, ...rest } = response.data.data;
+        let { id, phone_id, ...rest } = response.data.data;
         storedPlace = {
             id: id,
+            phone_id: phone_id,
             ...newPlace
         } as PlaceType;
-        // console.trace("response is ", response.data);
     } catch (error) {
         console.trace("error is ", error);
     }
@@ -219,11 +229,9 @@ export const fetchNewPlace = async ( newPlace: PlaceType )  => {
 export const fetchGetPlaceById = async (id: string) => {
     try {
         let response = await axios.get(
-            PLACE_URL + "/" + id
+            PHONE_URL + "/" + id + "/place"
         );
         let data = await response.data.data;
-        console.debug("response is ", data);
-        // map to PlaceType
         let place = {
             id: data.id,
             name: data.name,
@@ -235,16 +243,15 @@ export const fetchGetPlaceById = async (id: string) => {
             street: data.street,
             streetNumber: data.street_number,
             countryCode: data.country_code,
-            city: data._city,
-            district: data._district,
-            region: data._region,
-            subregion: data._subregion,
-            postalCode: data._postal_code,
-            country: data._country,
+            city: data.raw_city,
+            district: data.raw_district,
+            region: data.raw_region,
+            subregion: data.raw_subregion,
+            postalCode: data.postal_code,
+            country: data.raw_country,
             status: data.status,
             alerted: data.alerted,
         } as PlaceType;
-        // console.debug("place is ", place);
 
         return place;
     } catch (error) {
@@ -277,7 +284,6 @@ export const fetchUpdatePlace = async ( place: PlaceType ) => {
     if(error) {
         console.error("[dash] error is ", error);
     }
-    // console.debug("[dash] data is ", data);
     return place;
 }
 
@@ -286,6 +292,7 @@ export const fetchAlert = ({
     latitude, longitude,
     alert_type
 }) => {
+    console.log("[dash] fetchAlert is ", id, latitude, longitude, alert_type);
     const alertIn =  {
         id: id,
         geopoint: {type: 'Point', coordinates: [longitude, latitude]},
@@ -293,20 +300,21 @@ export const fetchAlert = ({
         status: "alerted",
         alert_type: alert_type
     }
-    return axios.patch(
-        PLACE_URL+"/"+id,
+    return axios.post(
+        PHONE_ALERTS_URL+"/"+id+"/alerts/trigger",
         alertIn
     );
 }
 
 export const fetchToken = async  ({ id, token }: {id: string, token: string}) => {
+    console.log("[dash] fetchToken is ", id, token);
+    //       id: id,
+    // status: "online"
     const tokenIn =  {
-        id: id,
-        token: token,
-        status: "online"
+        token: token
     }
     return axios.patch(
-        PLACE_URL+"/"+id,
+        PHONE_URL+"/"+id+"/token/refresh",
         tokenIn
     );
 }
